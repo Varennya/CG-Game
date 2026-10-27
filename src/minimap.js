@@ -116,6 +116,58 @@ export function drawMinimap(world, camera) {
         context.fillRect(p.x - cell * 0.3, p.y - cell * 0.3, cell * 0.6, cell * 0.6);
     });
 
+    // Checkpoints
+    (world.checkpoints || []).forEach((cp) => {
+        if (!explored[cp.row][cp.col]) return;
+        const p = toMap(cp.row, cp.col);
+        context.fillStyle = cp.activated ? '#38bdf8' : '#64748b';
+        context.beginPath();
+        context.moveTo(p.x, p.y - cell * 0.4);
+        context.lineTo(p.x + cell * 0.35, p.y);
+        context.lineTo(p.x, p.y + cell * 0.4);
+        context.lineTo(p.x - cell * 0.35, p.y);
+        context.closePath();
+        context.fill();
+    });
+
+    // Switches & Plates
+    (world.switches || []).forEach((sw) => {
+        if (!explored[sw.row][sw.col]) return;
+        const p = toMap(sw.row, sw.col);
+        context.fillStyle = sw.active ? '#4ade80' : '#38bdf8';
+        context.fillRect(p.x - cell * 0.25, p.y - cell * 0.25, cell * 0.5, cell * 0.5);
+    });
+
+    (world.plates || []).forEach((pl) => {
+        if (!explored[pl.row][pl.col]) return;
+        const p = toMap(pl.row, pl.col);
+        context.fillStyle = pl.active ? '#fbbf24' : '#a16207';
+        context.beginPath();
+        context.arc(p.x, p.y, cell * 0.3, 0, Math.PI * 2);
+        context.fill();
+    });
+
+    // Teleporters
+    (world.teleporters || []).forEach((tel) => {
+        if (!explored[tel.row][tel.col]) return;
+        const p = toMap(tel.row, tel.col);
+        context.strokeStyle = '#c084fc';
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.arc(p.x, p.y, cell * 0.35, 0, Math.PI * 2);
+        context.stroke();
+    });
+
+    // Relics
+    (world.relics || []).forEach((rel) => {
+        if (rel.collected || !explored[rel.row][rel.col]) return;
+        const p = toMap(rel.row, rel.col);
+        context.fillStyle = '#fde047';
+        context.beginPath();
+        context.arc(p.x, p.y, cell * 0.3, 0, Math.PI * 2);
+        context.fill();
+    });
+
     // Sentinels: only while they are close
     context.fillStyle = COLORS.sentinel;
     world.sentinels.forEach((sentinel) => {

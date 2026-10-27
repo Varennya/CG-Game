@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#15120f">
 
-    <title>Maze Explorer 3D: Ultimate Edition</title>
+    <title>Maze Explorer 3D: Advanced 3D Adventure (80 Chambers &bull; 4 Realms)</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +31,10 @@
             <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5M12 16.5v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
             <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><polygon points="12 8 15 15 12 13 9 15" fill="currentColor"/></symbol>
             <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+            <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3m12 6h3a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M6 3h12v7a6 6 0 0 1-12 0V3zm3 18h6m-3-4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+            <symbol id="i-world" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+            <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+            <symbol id="i-relic" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="2 17 12 22 22 17" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="2 12 12 17 22 12" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
         </defs>
     </svg>
 
@@ -45,7 +49,7 @@
                 <svg class="icon brand-sigil"><use href="#i-sigil"/></svg>
                 <div class="brand-text">
                     <span class="brand-title">Maze Explorer 3D</span>
-                    <span class="brand-sub">Ultimate Edition</span>
+                    <span class="brand-sub">4 Realms &bull; 80 Chambers</span>
                 </div>
             </div>
 
@@ -71,6 +75,11 @@
                     <span class="stat" id="hud-keys-stat" title="Keys">
                         <svg class="icon"><use href="#i-key"/></svg>
                         <span id="hud-keys" class="key-slots"></span>
+                    </span>
+
+                    <span class="stat hidden" id="hud-relic-stat" title="Ancient Relic">
+                        <svg class="icon"><use href="#i-relic"/></svg>
+                        <b id="hud-relic-text">Relic Found!</b>
                     </span>
 
                     <span class="stat" title="Par time">
@@ -116,22 +125,108 @@
             </div>
         </aside>
 
+        <!-- Objective Toast & Damage Flash -->
         <div id="countdown" class="hidden"><span id="countdown-text"></span></div>
         <div id="toast"></div>
         <div id="damage-flash"></div>
+        <div id="teleport-flash"></div>
 
         <!-- TITLE OVERLAY -->
         <div id="start-overlay" class="overlay">
             <div class="title-screen slab">
-                <svg class="icon title-sigil"><use href="#i-sigil"/></svg>
-                <h1 class="game-title">Maze Explorer 3D</h1>
-                <div class="edition-banner">Ultimate Edition</div>
-                <p class="tagline">Ten progressive levels across four ancient difficulty tiers.</p>
+                <div class="title-header-badge">
+                    <svg class="icon title-sigil"><use href="#i-sigil"/></svg>
+                    <span class="edition-banner">Advanced 3D Adventure &bull; 4 Realms &bull; 80 Chambers</span>
+                </div>
 
-                <div class="title-buttons">
-                    <button id="start-button" class="primary-button">Start exploring</button>
-                    <button id="levels-button" class="secondary-button">Level select (10)</button>
-                    <button id="help-button" class="secondary-button"><svg class="icon"><use href="#i-help"/></svg> How to play</button>
+                <h1 class="game-title">MAZE EXPLORER 3D</h1>
+                <p class="tagline">Traverse four distinct 3D realms, conquer environmental puzzles, evade sentinels, and overcome mythical guardians.</p>
+
+                <!-- World Realms Teaser Ribbon -->
+                <div class="realms-teaser-bar">
+                    <div class="realm-pill realm-ruins"><span>🏛️</span> Ancient Ruins</div>
+                    <div class="realm-pill realm-ice"><span>❄️</span> Frozen Caverns</div>
+                    <div class="realm-pill realm-lava"><span>🌋</span> Lava Fortress</div>
+                    <div class="realm-pill realm-shadow"><span>🔮</span> Shadow Realm</div>
+                </div>
+
+                <!-- Player Live Profile Summary Strip -->
+                <div class="player-profile-strip slab">
+                    <div class="profile-stat">
+                        <span class="stat-label">Campaign Stars</span>
+                        <strong id="home-stars-stat" class="gold">★ 0/240</strong>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="profile-stat">
+                        <span class="stat-label">Tokens Earned</span>
+                        <strong id="home-tokens-stat">🪙 0</strong>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="profile-stat">
+                        <span class="stat-label">Chambers Cleared</span>
+                        <strong id="home-cleared-stat">0/80</strong>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="profile-stat">
+                        <span class="stat-label">Realms Unlocked</span>
+                        <strong id="home-realms-stat">1/4</strong>
+                    </div>
+                </div>
+
+                <!-- Hero Action Buttons -->
+                <div class="hero-actions-row">
+                    <button id="start-button" class="primary-button hero-play-btn">
+                        <span class="btn-main-text">Continue Adventure</span>
+                        <span id="start-button-sub" class="btn-sub-text">Chamber I &bull; Ancient Ruins</span>
+                    </button>
+                    <button id="new-game-button" class="secondary-button hero-new-btn">
+                        <svg class="icon"><use href="#i-reset"/></svg>
+                        <span>New Game</span>
+                    </button>
+                </div>
+
+                <!-- Feature Navigation Cards (3 Columns) -->
+                <div class="feature-tiles-grid">
+                    <button id="levels-button" class="feature-tile">
+                        <span class="tile-icon">🗝️</span>
+                        <div class="tile-content">
+                            <strong>Chamber Select</strong>
+                            <span>Play 20 chambers per realm</span>
+                        </div>
+                        <span class="tile-arrow">&rarr;</span>
+                    </button>
+                    <button id="worlds-button" class="feature-tile">
+                        <span class="tile-icon">🌐</span>
+                        <div class="tile-content">
+                            <strong>World Hub</strong>
+                            <span>Inspect realms & criteria</span>
+                        </div>
+                        <span class="tile-arrow">&rarr;</span>
+                    </button>
+                    <button id="achievements-button" class="feature-tile">
+                        <span class="tile-icon">🏆</span>
+                        <div class="tile-content">
+                            <strong>Achievements</strong>
+                            <span>Claim trophies & tokens</span>
+                        </div>
+                        <span class="tile-arrow">&rarr;</span>
+                    </button>
+                </div>
+
+                <!-- Bottom Quick Utility Pill Bar -->
+                <div class="bottom-utility-dock">
+                    <button id="settings-button" class="utility-pill-btn">
+                        <svg class="icon"><use href="#i-gear"/></svg>
+                        <span>Settings</span>
+                    </button>
+                    <button id="help-button" class="utility-pill-btn">
+                        <svg class="icon"><use href="#i-help"/></svg>
+                        <span>How to Play</span>
+                    </button>
+                    <button id="credits-button" class="utility-pill-btn">
+                        <svg class="icon"><use href="#i-shield"/></svg>
+                        <span>Credits & CG Tech</span>
+                    </button>
                 </div>
 
                 <p class="title-hint">
@@ -145,108 +240,312 @@
         <div id="levels-overlay" class="overlay hidden">
             <div class="panel-card slab wide-card">
                 <div class="level-select-header">
-                    <h2>Select Level</h2>
+                    <h2>World & Chamber Select</h2>
                     <p class="description">
-                        Earn 3 stars per level: escape, collect all orbs, and beat par time.
+                        Explore 4 distinct worlds with 20 unique chambers each. Complete challenges to earn tokens, stars, and achievements to unlock new realms!
                     </p>
                 </div>
 
-                <!-- Campaign Summary Banner -->
-                <div class="campaign-summary slab">
-                    <div class="summary-stat">
-                        <span>Campaign Stars</span>
-                        <strong id="summary-stars">★ 0/30</strong>
+                <!-- World Navigation Tabs -->
+                <div id="world-nav-tabs" class="world-nav-tabs"></div>
+
+                <!-- Active World Banner & Stats -->
+                <div id="world-active-banner" class="world-active-banner slab">
+                    <div class="world-banner-info">
+                        <span id="active-world-icon" class="active-world-icon">🏛️</span>
+                        <div>
+                            <div class="world-title-row">
+                                <h3 id="active-world-name">Ancient Ruins</h3>
+                                <span id="active-world-badge" class="badge-tier tier-1">World 1</span>
+                            </div>
+                            <p id="active-world-desc" class="active-world-desc">Weathered stone temples, ancient pillars, warm torchlight & the colossal Stone Guardian.</p>
+                        </div>
                     </div>
-                    <div class="summary-stat">
-                        <span>Levels Conquered</span>
-                        <strong id="summary-completed">0/10</strong>
+                    <div class="world-banner-stats">
+                        <div class="summary-stat">
+                            <span>World Stars</span>
+                            <strong id="summary-world-stars">★ 0/60</strong>
+                        </div>
+                        <div class="summary-stat">
+                            <span>Chambers Cleared</span>
+                            <strong id="summary-world-completed">0/20</strong>
+                        </div>
+                        <div class="summary-stat">
+                            <span>Adventure Tokens</span>
+                            <strong id="summary-tokens">🪙 0</strong>
+                        </div>
+                        <button id="quick-play-button" class="primary-button compact">Play Chamber I</button>
                     </div>
-                    <button id="quick-play-button" class="primary-button compact">Play Next</button>
                 </div>
 
-                <!-- Tier Filter Tabs -->
-                <div class="tier-tabs">
-                    <button class="tier-tab active" data-tier="all">All (10)</button>
-                    <button class="tier-tab" data-tier="1">Tier I: Beginner</button>
-                    <button class="tier-tab" data-tier="2">Tier II: Intermediate</button>
-                    <button class="tier-tab" data-tier="3">Tier III: Advanced</button>
-                    <button class="tier-tab" data-tier="4">Tier IV: Expert</button>
+                <!-- World Content: Either 20 Chamber Cards (if unlocked) OR World Unlock Gate (if locked) -->
+                <div id="world-content-area" style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+                    <div id="level-grid" class="level-grid"></div>
+                    <div id="world-lock-portal" class="world-lock-portal hidden"></div>
                 </div>
-
-                <!-- 10 Level Cards Grid -->
-                <div id="level-grid" class="level-grid"></div>
 
                 <div class="level-select-footer">
                     <button id="levels-back-button" class="secondary-button">Back to Menu</button>
-                    <button id="reset-progress-button" class="danger-button"><svg class="icon"><use href="#i-trash"/></svg> Reset Progress</button>
+                    <button id="view-worlds-hub-button" class="secondary-button"><svg class="icon"><use href="#i-world"/></svg> World Hub</button>
+                    <button id="reset-progress-button" class="danger-button"><svg class="icon"><use href="#i-trash"/></svg> Reset Campaign</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORLD SELECT OVERLAY -->
+        <div id="worlds-overlay" class="overlay hidden">
+            <div class="panel-card slab wide-card">
+                <div class="level-select-header">
+                    <h2>Themed Worlds</h2>
+                    <p class="description">
+                        Explore four visually distinct 3D environments with unique lighting, procedural materials, and guardian trials. Unlock new realms by earning points and achievements!
+                    </p>
+                </div>
+
+                <div id="worlds-grid" class="worlds-grid"></div>
+
+                <div class="level-select-footer">
+                    <button id="worlds-back-button" class="secondary-button">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACHIEVEMENTS OVERLAY -->
+        <div id="achievements-overlay" class="overlay hidden">
+            <div class="panel-card slab wide-card">
+                <div class="level-select-header">
+                    <h2>Campaign Achievements</h2>
+                    <p class="description">
+                        Earn achievements through exploration, speedrunning, guardian encounters, and flawless escapes.
+                    </p>
+                </div>
+
+                <div id="achievements-grid" class="achievements-grid"></div>
+
+                <div class="level-select-footer">
+                    <button id="achievements-back-button" class="primary-button">Back</button>
                 </div>
             </div>
         </div>
 
         <!-- HOW TO PLAY OVERLAY -->
         <div id="help-overlay" class="overlay hidden">
-            <div class="panel-card slab">
-                <h2>How to Play</h2>
-                <div class="help-grid">
-                    <div class="help-item">
-                        <strong>Movement & Navigation</strong>
-                        <p>Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to move. Move the mouse to rotate the first-person perspective camera. Press <kbd>P</kbd> or <kbd>Esc</kbd> to pause.</p>
+            <div class="panel-card slab modal-dialog-card">
+                <div class="level-select-header">
+                    <h2>Adventurer's Field Guide</h2>
+                    <p class="description">Master controls, mechanics, puzzle elements, and survival tactics to navigate all 80 chambers.</p>
+                </div>
+                <div class="help-grid-cards">
+                    <div class="guide-card">
+                        <div class="guide-card-header">
+                            <span class="guide-icon">🎮</span>
+                            <h4>Controls & Navigation</h4>
+                        </div>
+                        <ul class="guide-list">
+                            <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to move.</li>
+                            <li><strong>Mouse Look:</strong> Smooth first-person camera rotation.</li>
+                            <li><kbd>P</kbd> or <kbd>Esc</kbd> to toggle the pause menu.</li>
+                            <li>Collect all <strong>Golden Orbs</strong> to maximize your rating.</li>
+                        </ul>
                     </div>
-                    <div class="help-item">
-                        <strong>Keys & Sealed Doors</strong>
-                        <p>Doors are sealed by ancient locks. Walk over a glowing Amber, Magenta, or Green key to collect it, then approach its matching door to unlock it.</p>
+                    <div class="guide-card">
+                        <div class="guide-card-header">
+                            <span class="guide-icon">🗝️</span>
+                            <h4>Keys, Gates & Switches</h4>
+                        </div>
+                        <ul class="guide-list">
+                            <li>Collect keys (<span style="color:#ffb020;">Amber</span>, <span style="color:#d946ef;">Magenta</span>, <span style="color:#34d399;">Green</span>, <span style="color:#38bdf8;">Cyan</span>) for matching gates.</li>
+                            <li>Touch stone <strong>Switch Pedestals</strong> to rotate levers and open barricades.</li>
+                            <li>Search for <strong>Ancient Relics</strong> hidden in secret chambers!</li>
+                        </ul>
                     </div>
-                    <div class="help-item">
-                        <strong>Patrolling Sentinels</strong>
-                        <p>Ancient sentinels patrol the corridors. If a sentinel touches you, you will be repelled and suffer a <strong>+10s time penalty</strong>. Listen for the sentinel hum!</p>
+                    <div class="guide-card">
+                        <div class="guide-card-header">
+                            <span class="guide-icon">⚡</span>
+                            <h4>Pressure Plates & Traps</h4>
+                        </div>
+                        <ul class="guide-list">
+                            <li>Step on carved <strong>Pressure Plates</strong> to depress mechanisms.</li>
+                            <li>Beware of <strong>Timed Doors</strong> that tick down before locking again!</li>
+                            <li>Dimensional <strong>Teleporters</strong> instantly warp across impassable voids.</li>
+                            <li>Ignite <strong>Checkpoint Obelisks</strong> to save your safe respawn point.</li>
+                        </ul>
                     </div>
-                    <div class="help-item">
-                        <strong>Radiant Exit Beacon</strong>
-                        <p>A towering beam of golden light marks the exit portal. Spot it down long corridors and through the mist to guide your escape.</p>
-                    </div>
-                    <div class="help-item">
-                        <strong>Three-Star Rating</strong>
-                        <p>★ 1 Star: Escape the maze<br>★ 2 Stars: Collect every glowing orb<br>★ 3 Stars: Beat the par benchmark time</p>
+                    <div class="guide-card">
+                        <div class="guide-card-header">
+                            <span class="guide-icon">🛡️</span>
+                            <h4>Hazards, Physics & Bosses</h4>
+                        </div>
+                        <ul class="guide-list">
+                            <li><strong>Glacial Ice:</strong> Low friction creates slippery glide momentum.</li>
+                            <li><strong>Molten Lava:</strong> Contact inflicts heat damage and knockback.</li>
+                            <li><strong>Corridor Sentinels:</strong> Avoid red patrolling eyes and their penalties.</li>
+                            <li><strong>Guardian Finale:</strong> Chamber 20 in each realm tests puzzle tactics!</li>
+                        </ul>
                     </div>
                 </div>
-                <button id="help-back-button" class="primary-button">Got it</button>
+                <div class="level-select-footer">
+                    <button id="help-back-button" class="primary-button compact" style="min-width: 200px;">Got It &bull; Ready to Explore</button>
+                </div>
             </div>
         </div>
 
+        <!-- SETTINGS MODAL -->
+        <div id="settings-overlay" class="overlay hidden">
+            <div class="panel-card slab modal-dialog-card">
+                <div class="level-select-header">
+                    <h2>Game Preferences & Settings</h2>
+                    <p class="description">Tune audio balance, controls sensitivity, graphics fidelity, and equip unlocked cosmetic player trails.</p>
+                </div>
+
+                <div class="settings-sections-grid">
+                    <!-- Audio Settings Card -->
+                    <div class="settings-card slab">
+                        <div class="settings-card-title">
+                            <span class="settings-sec-icon">🔊</span>
+                            <h4>Audio & Sound Channels</h4>
+                        </div>
+                        <div class="setting-row">
+                            <label for="master-vol-slider">Master Volume</label>
+                            <input type="range" id="master-vol-slider" min="0" max="1" step="0.05" value="1">
+                            <span id="master-vol-value" class="setting-val-badge">100%</span>
+                        </div>
+                        <div class="setting-row">
+                            <label for="sfx-vol-slider">Sound Effects (SFX)</label>
+                            <input type="range" id="sfx-vol-slider" min="0" max="1" step="0.05" value="1">
+                            <span id="sfx-vol-value" class="setting-val-badge">100%</span>
+                        </div>
+                        <div class="setting-row">
+                            <label for="mute-button">Mute All Audio</label>
+                            <button id="mute-button" class="toggle-button">Off</button>
+                        </div>
+                    </div>
+
+                    <!-- Controls & Immersion Card -->
+                    <div class="settings-card slab">
+                        <div class="settings-card-title">
+                            <span class="settings-sec-icon">🎮</span>
+                            <h4>Controls & Immersion</h4>
+                        </div>
+                        <div class="setting-row">
+                            <label for="sens-slider">Mouse Look Sensitivity</label>
+                            <input type="range" id="sens-slider" min="0.4" max="2.5" step="0.1" value="1">
+                            <span id="sens-value" class="setting-val-badge">1.0×</span>
+                        </div>
+                        <div class="setting-row">
+                            <label for="headbob-button">Walking Camera Bob</label>
+                            <button id="headbob-button" class="toggle-button">On</button>
+                        </div>
+                        <div class="setting-row">
+                            <label for="shake-button">Screen Shake Impact</label>
+                            <button id="shake-button" class="toggle-button">On</button>
+                        </div>
+                    </div>
+
+                    <!-- Graphics & Shaders Card -->
+                    <div class="settings-card slab">
+                        <div class="settings-card-title">
+                            <span class="settings-sec-icon">🖥️</span>
+                            <h4>Graphics & Quality</h4>
+                        </div>
+                        <div class="setting-row">
+                            <label for="quality-button">Graphics Quality Preset</label>
+                            <button id="quality-button" class="toggle-button">Smooth</button>
+                        </div>
+                        <p class="setting-note">Detailed enables PCF shadow maps and native resolution. Smooth optimizes performance for integrated GPUs.</p>
+                    </div>
+
+                    <!-- Cosmetic Player Trails Card -->
+                    <div class="settings-card slab">
+                        <div class="settings-card-title">
+                            <span class="settings-sec-icon">✨</span>
+                            <h4>Player Trail Cosmetic</h4>
+                        </div>
+                        <div class="setting-row" style="margin-bottom: 8px;">
+                            <label for="cosmetic-select">Active Particle Trail</label>
+                            <select id="cosmetic-select" class="styled-select" style="width: 100%;"></select>
+                        </div>
+                        <p class="setting-note">Unlock new particle trail effects by earning stars across your adventure!</p>
+                    </div>
+                </div>
+
+                <div class="level-select-footer">
+                    <button id="settings-back-button" class="primary-button compact" style="min-width: 200px;">Save & Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CREDITS & CG CONCEPTS OVERLAY -->
+        <div id="credits-overlay" class="overlay hidden">
+            <div class="panel-card slab modal-dialog-card">
+                <div class="level-select-header">
+                    <h2>Credits & Computer Graphics Techniques</h2>
+                    <p class="description">Demonstrating advanced real-time Three.js WebGL graphics architectures integrated naturally into gameplay.</p>
+                </div>
+
+                <div class="cg-tech-cards-grid">
+                    <div class="cg-card">
+                        <div class="cg-card-badge">GPU Optimization</div>
+                        <h4>InstancedMesh Wall Batching</h4>
+                        <p>Batches hundreds of maze walls and pillars into a single GPU draw call using <code>THREE.InstancedMesh</code> with 4×4 transform matrices, achieving 60+ FPS on student laptops.</p>
+                    </div>
+                    <div class="cg-card">
+                        <div class="cg-card-badge">Procedural Texturing</div>
+                        <h4>Mathematical Canvas Shaders</h4>
+                        <p>Generates 5 distinct procedural materials (Sunstone runes, glacial ice crystals, molten magma veins, and obsidian bricks) dynamically in memory with zero image downloads.</p>
+                    </div>
+                    <div class="cg-card">
+                        <div class="cg-card-badge">Lighting & Shadows</div>
+                        <h4>PCF Soft Shadow Mapping</h4>
+                        <p>Dynamic directional light frustum fitted tightly to maze bounds with Percentage-Closer Filtering (PCF) for smooth, realistic architectural penumbras.</p>
+                    </div>
+                    <div class="cg-card">
+                        <div class="cg-card-badge">VFX & Particles</div>
+                        <h4>Atmospheric Particle Systems</h4>
+                        <p>World-tailored GPU particle emitters simulating floating ancient dust motes, falling crystalline snowflakes, rising molten embers, and swirling void motes.</p>
+                    </div>
+                    <div class="cg-card">
+                        <div class="cg-card-badge">Audio Engineering</div>
+                        <h4>Procedural Web Audio Synth</h4>
+                        <p>Real-time Web Audio API multi-oscillator synthesis for footstep clicks, key chimes, stone grinding doors, and guardian victory fanfares without external audio assets.</p>
+                    </div>
+                    <div class="cg-card">
+                        <div class="cg-card-badge">Graph Theory</div>
+                        <h4>Reachability & Path Solvers</h4>
+                        <p>Breadth-First Search (BFS) graph reachability validation ensuring every key, door, switch, and exit portal is 100% solvable before a chamber begins.</p>
+                    </div>
+                </div>
+
+                <div class="level-select-footer">
+                    <button id="credits-back-button" class="primary-button compact" style="min-width: 200px;">Close Exhibition</button>
+                </div>
+            </div>
+        </div>
 
         <!-- PAUSE OVERLAY -->
         <div id="pause-overlay" class="overlay hidden">
-            <div class="panel-card slab">
-                <h2>Paused</h2>
-                <p class="description" id="pause-level"></p>
+            <div class="panel-card slab" style="width: min(480px, 92vw);">
+                <div class="pause-sigil">⏸️</div>
+                <h2 style="margin-bottom: 4px;">Game Paused</h2>
+                <p class="description" id="pause-level" style="margin-bottom: 20px;">Chamber IV &bull; Ancient Ruins</p>
 
-                <div class="setting-row">
-                    <label for="sens-slider">Mouse sensitivity</label>
-                    <input type="range" id="sens-slider" min="0.4" max="2.5" step="0.1" value="1">
-                    <span id="sens-value">1.0×</span>
-                </div>
+                <button id="resume-button" class="primary-button" style="margin-bottom: 14px; font-size: 18px;">
+                    ▶ Resume Quest
+                </button>
 
-                <div class="setting-row">
-                    <label for="mute-button">Sound</label>
-                    <button id="mute-button" class="toggle-button">On</button>
-                </div>
-
-                <div class="setting-row">
-                    <label for="quality-button">Graphics</label>
-                    <button id="quality-button" class="toggle-button">Smooth</button>
-                </div>
-                <p class="setting-note">Smooth runs light on GPU. Detailed enables full resolution and PCF shadow maps.</p>
-
-                <div class="setting-row">
-                    <label for="headbob-button">Walking Head-Bob</label>
-                    <button id="headbob-button" class="toggle-button">On</button>
-                </div>
-
-                <button id="resume-button" class="primary-button">Resume</button>
-
-                <div class="button-row">
-                    <button id="pause-restart-button" class="secondary-button">Restart level</button>
-                    <button id="pause-levels-button" class="secondary-button">Level select</button>
+                <div class="pause-actions-grid">
+                    <button id="pause-restart-button" class="secondary-button">
+                        <svg class="icon"><use href="#i-reset"/></svg> Restart Chamber
+                    </button>
+                    <button id="pause-settings-button" class="secondary-button">
+                        <svg class="icon"><use href="#i-gear"/></svg> Settings
+                    </button>
+                    <button id="pause-levels-button" class="secondary-button">
+                        <svg class="icon"><use href="#i-world"/></svg> Chamber Select
+                    </button>
+                    <button id="pause-menu-button" class="secondary-button">
+                        <svg class="icon"><use href="#i-sigil"/></svg> Main Menu
+                    </button>
                 </div>
             </div>
         </div>
@@ -264,7 +563,8 @@
                     <span class="star">★</span>
                 </div>
 
-                <div id="new-best-badge" class="badge hidden">New best time</div>
+                <div id="new-best-badge" class="badge hidden">New Best Time</div>
+                <div id="relic-earned-badge" class="badge hidden">Sacred Relic Discovered!</div>
 
                 <ul class="result-list">
                     <li class="earned"><span>Escape the maze</span><b>★</b></li>
@@ -276,13 +576,47 @@
                     <p>Your time <strong id="final-time">00:00.0</strong></p>
                     <p class="penalty-note" id="penalty-note"></p>
                     <p>Best time <strong id="final-best">00:00.0</strong></p>
+                    <p>Adventure Tokens Earned: <strong id="earned-tokens" class="gold">+50</strong></p>
                 </div>
 
-                <button id="next-level-button" class="primary-button">Next level</button>
+                <button id="next-level-button" class="primary-button">Next Level</button>
 
                 <div class="button-row">
                     <button id="replay-button" class="secondary-button">Replay</button>
-                    <button id="victory-levels-button" class="secondary-button">Level select</button>
+                    <button id="victory-levels-button" class="secondary-button">Level Select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRAND FINALE VICTORY OVERLAY (Level 20 Climax) -->
+        <div id="grand-victory-overlay" class="overlay hidden">
+            <div class="panel-card slab grand-card">
+                <h1 class="grand-title">THE ARCHITECT IS CONQUERED!</h1>
+                <p class="edition-banner">Master of the Maze &bull; Campaign Complete</p>
+                <p class="description">You have traversed all twenty ancient labyrinths, unsealed the elemental secrets, and conquered the Architect of Shadows!</p>
+
+                <div class="campaign-summary slab">
+                    <div class="summary-stat">
+                        <span>Total Stars</span>
+                        <strong id="grand-stars" class="gold">★ 60/60</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Total Levels</span>
+                        <strong id="grand-completed">20/20</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Sacred Relics</span>
+                        <strong id="grand-relics">💎 4/4</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Total Tokens</span>
+                        <strong id="grand-tokens">🪙 1,250</strong>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button id="grand-replay-button" class="primary-button">Replay Final Trial</button>
+                    <button id="grand-menu-button" class="secondary-button">Return to Main Menu</button>
                 </div>
             </div>
         </div>
@@ -292,7 +626,7 @@
             <div class="panel-card slab dialog-card">
                 <h2>Reset Campaign?</h2>
                 <p class="description">
-                    This will lock all levels from Level 2 to 10 and clear your star records. Are you sure?
+                    This will reset all unlocked levels from Level 2 through 20 and clear your star records. Are you sure?
                 </p>
                 <div class="button-row">
                     <button id="confirm-reset-button" class="danger-button wide">Yes, Reset</button>

@@ -5,18 +5,39 @@
 
 let audioContext = null;
 let masterGain = null;
+let sfxGain = null;
+let musicGain = null;
+
 let muted = false;
+let masterVol = 1.0;
+let sfxVol = 1.0;
+let musicVol = 0.6;
 
 // Continuous sentinel proximity drone
 let sentinelOsc = null;
 let sentinelGain = null;
 
+// Ambient world synth drone
+let ambientOsc1 = null;
+let ambientOsc2 = null;
+let ambientGain = null;
+let currentAmbientWorld = null;
+
 function getAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
         masterGain = audioContext.createGain();
-        masterGain.gain.value = muted ? 0 : 1;
+        masterGain.gain.value = muted ? 0 : masterVol;
         masterGain.connect(audioContext.destination);
+
+        sfxGain = audioContext.createGain();
+        sfxGain.gain.value = sfxVol;
+        sfxGain.connect(masterGain);
+
+        musicGain = audioContext.createGain();
+        musicGain.gain.value = musicVol;
+        musicGain.connect(masterGain);
     }
 
     if (audioContext.state === 'suspended') {
@@ -26,11 +47,20 @@ function getAudioContext() {
     return audioContext;
 }
 
-export function setMuted(value) {
-    muted = value;
+export function setVolumes({ master, sfx, music, isMuted }) {
+    if (typeof isMuted === 'boolean') muted = isMuted;
+    if (typeof master === 'number') masterVol = Math.max(0, Math.min(1, master));
+    if (typeof sfx === 'number') sfxVol = Math.max(0, Math.min(1, sfx));
+    if (typeof music === 'number') musicVol = Math.max(0, Math.min(1, music));
 
     if (masterGain) {
-        masterGain.gain.value = muted ? 0 : 1;
+        masterGain.gain.value = muted ? 0 : masterVol;
+    }
+    if (sfxGain) {
+        sfxGain.gain.value = sfxVol;
+    }
+    if (musicGain) {
+        musicGain.gain.value = musicVol;
     }
 
     if (muted) {
@@ -38,11 +68,16 @@ export function setMuted(value) {
     }
 }
 
+export function setMuted(value) {
+    setVolumes({ isMuted: value });
+}
+
 export function isMuted() {
     return muted;
 }
 
 function playTone(frequency, duration, type = 'sine', volume = 0.2, delay = 0) {
+    if (muted) return;
     const audio = getAudioContext();
     const startTime = audio.currentTime + delay;
     const oscillator = audio.createOscillator();
@@ -55,13 +90,14 @@ function playTone(frequency, duration, type = 'sine', volume = 0.2, delay = 0) {
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
     oscillator.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(sfxGain || masterGain);
 
     oscillator.start(startTime);
     oscillator.stop(startTime + duration);
 }
 
 function playSweep(fromHz, toHz, duration, type = 'triangle', volume = 0.15, delay = 0) {
+    if (muted) return;
     const audio = getAudioContext();
     const startTime = audio.currentTime + delay;
     const oscillator = audio.createOscillator();
@@ -75,7 +111,7 @@ function playSweep(fromHz, toHz, duration, type = 'triangle', volume = 0.15, del
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
     oscillator.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(sfxGain || masterGain);
 
     oscillator.start(startTime);
     oscillator.stop(startTime + duration);
@@ -94,7 +130,6 @@ export function playVictorySound() {
 }
 
 export function playGrandVictorySound() {
-    // Majestic fanfare for completing Level 10 (Architect's Trial)
     playTone(523.25, 0.35, 'triangle', 0.35, 0);
     playTone(659.25, 0.35, 'triangle', 0.35, 0.2);
     playTone(783.99, 0.4, 'triangle', 0.35, 0.4);
@@ -138,10 +173,6 @@ export function playClickSound() {
     playTone(620, 0.05, 'sine', 0.1);
 }
 
-export function playLabClick() {
-    playTone(820, 0.04, 'triangle', 0.08);
-}
-
 export function playCountdownTick() {
     playTone(392, 0.14, 'triangle', 0.18);
 }
@@ -149,6 +180,58 @@ export function playCountdownTick() {
 export function playCountdownGo() {
     playTone(523.25, 0.18, 'triangle', 0.22);
     playTone(783.99, 0.4, 'triangle', 0.22, 0.08);
+}
+
+// ----------------------------------------
+// Environmental Mechanics Audio
+// ----------------------------------------
+
+export function playSwitchSound() {
+    playTone(320, 0.08, 'sawtooth', 0.2, 0);
+    playTone(540, 0.18, 'triangle', 0.22, 0.06);
+}
+
+export function playPressurePlateSound() {
+    playTone(180, 0.15, 'triangle', 0.25, 0);
+    playSweep(220, 140, 0.2, 'sawtooth', 0.15, 0.05);
+}
+
+export function playTeleportSound() {
+    playSweep(200, 880, 0.35, 'sine', 0.25, 0);
+    playSweep(880, 440, 0.25, 'triangle', 0.2, 0.15);
+}
+
+export function playCheckpointSound() {
+    playTone(587.33, 0.2, 'sine', 0.25, 0);
+    playTone(880, 0.25, 'sine', 0.25, 0.12);
+    playTone(1174.66, 0.45, 'sine', 0.3, 0.24);
+}
+
+export function playRelicSound() {
+    playTone(523.25, 0.18, 'triangle', 0.25, 0);
+    playTone(659.25, 0.18, 'triangle', 0.25, 0.1);
+    playTone(783.99, 0.22, 'triangle', 0.28, 0.2);
+    playTone(1046.5, 0.5, 'sine', 0.35, 0.3);
+}
+
+export function playLavaSizzleSound() {
+    playSweep(600, 120, 0.3, 'sawtooth', 0.2);
+}
+
+export function playSecretRevealSound() {
+    playSweep(90, 180, 0.6, 'triangle', 0.2);
+}
+
+export function playBossAlertSound() {
+    playTone(110, 0.6, 'sawtooth', 0.3, 0);
+    playTone(82.4, 0.8, 'sawtooth', 0.35, 0.2);
+}
+
+export function playBossDefeatedSound() {
+    playTone(440, 0.4, 'sine', 0.3, 0);
+    playTone(554.37, 0.4, 'sine', 0.3, 0.25);
+    playTone(659.25, 0.5, 'sine', 0.35, 0.5);
+    playTone(880, 0.9, 'triangle', 0.4, 0.75);
 }
 
 // ----------------------------------------
@@ -171,11 +254,10 @@ export function updateSentinelHum(dist) {
         sentinelGain.gain.setValueAtTime(0, audio.currentTime);
 
         sentinelOsc.connect(sentinelGain);
-        sentinelGain.connect(masterGain);
+        sentinelGain.connect(sfxGain || masterGain);
         sentinelOsc.start();
     }
 
-    // Closer distance = higher volume and slightly higher pitch
     const intensity = Math.max(0, Math.min(1, (7 - dist) / 5.5));
     const targetVol = intensity * 0.14;
     const targetFreq = 65 + intensity * 45;
