@@ -1,28 +1,26 @@
 // ========================================
-// UI HELPERS
-// Overlays, HUD, toasts, level select and the results screen.
-// (All game rules live in main.js; this file only touches the DOM.)
+// UI CONTROLLER & OVERLAYS
+// MAZE EXPLORER 3D: ULTIMATE EDITION
 // ========================================
 
-import { KEY_COLORS, KEY_NAMES } from './levels.js';
+import { KEY_COLORS, KEY_NAMES, TIERS } from './levels.js';
+import { getProgressSummary } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 
 // ----------------------------------------
-// Time formatting
+// Time Formatting Helpers
 // ----------------------------------------
 
 export function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
     const remaining = Math.floor(seconds % 60);
-
     return String(minutes).padStart(2, '0') + ':' + String(remaining).padStart(2, '0');
 }
 
 export function formatTimePrecise(seconds) {
     const minutes = Math.floor(seconds / 60);
     const remaining = seconds - minutes * 60;
-
     return String(minutes).padStart(2, '0') + ':' + remaining.toFixed(1).padStart(4, '0');
 }
 
@@ -31,26 +29,28 @@ export function roman(n) {
 }
 
 // ----------------------------------------
-// Overlays: only one is visible at a time
+// Overlays Management
 // ----------------------------------------
 
 const overlays = {
     title: $('start-overlay'),
     levels: $('levels-overlay'),
     pause: $('pause-overlay'),
-    complete: $('victory-overlay')
+    complete: $('victory-overlay'),
+    help: $('help-overlay'),
+    reset: $('reset-modal')
 };
 
 export function showOverlay(name) {
-    // Menus get a clean screen: the HUD is hidden behind them
     document.body.classList.toggle('in-menu', Boolean(name));
     Object.entries(overlays).forEach(([key, element]) => {
+        if (!element) return;
         element.classList.toggle('hidden', key !== name);
     });
 }
 
 // ----------------------------------------
-// HUD
+// Gameplay HUD
 // ----------------------------------------
 
 const timerDisplay = $('timer');
@@ -58,7 +58,6 @@ let lastTimerText = '';
 
 export function setTimer(seconds) {
     const text = formatTime(seconds);
-
     if (text !== lastTimerText) {
         timerDisplay.textContent = text;
         lastTimerText = text;
@@ -68,8 +67,23 @@ export function setTimer(seconds) {
 export function setLevelHUD(level, index, best) {
     $('hud-level-num').textContent = roman(index + 1);
     $('hud-level-name').textContent = level.name;
+
+    const tierBadge = $('hud-tier-badge');
+    if (tierBadge) {
+        tierBadge.textContent = `Tier ${roman(level.tier)}: ${level.tierName}`;
+        tierBadge.className = `badge-tier tier-${level.tier}`;
+    }
+
+    const objEl = $('hud-objective');
+    if (objEl) {
+        objEl.textContent = level.objective || 'Find the golden exit portal.';
+    }
+
     $('hud-par').textContent = formatTime(level.par);
     $('hud-best').textContent = best === undefined ? '--:--' : formatTime(best);
+
+    document.body.classList.toggle('dim-level', level.visibility === 'dim');
+    document.body.classList.toggle('dark-level', level.visibility === 'dark');
 
     setOrbs(0, level.orbs.length);
 
@@ -96,23 +110,21 @@ export function setOrbs(collected, total) {
     element.classList.toggle('gold', total > 0 && collected === total);
 }
 
-// state: 'held' | 'used'
 export function setKeyState(id, state) {
     const slot = $('key-slot-' + id);
     if (!slot) return;
-
     slot.classList.toggle('held', state === 'held');
     slot.classList.toggle('used', state === 'used');
 }
 
 // ----------------------------------------
-// Toast and damage flash
+// Notifications & Damage Flash
 // ----------------------------------------
 
 const toastElement = $('toast');
 let toastTimer = null;
 
-export function toast(text, kind = 'info', duration = 2200) {
+export function toast(text, kind = 'info', duration = 2400) {
     toastElement.textContent = text;
     toastElement.className = 'show ' + kind;
 
@@ -131,12 +143,12 @@ const damageFlash = $('damage-flash');
 
 export function flashDamage() {
     damageFlash.classList.remove('active');
-    void damageFlash.offsetWidth; // restart the animation
+    void damageFlash.offsetWidth;
     damageFlash.classList.add('active');
 }
 
 // ----------------------------------------
-// Title screen
+// Title Screen
 // ----------------------------------------
 
 export function setStartButton(text) {
@@ -144,26 +156,55 @@ export function setStartButton(text) {
 }
 
 // ----------------------------------------
-// Level select
+// Level Selection (10 Levels with Tier Filtering)
 // ----------------------------------------
+
+let currentTierFilter = 'all';
 
 export function renderLevelGrid(levels, progress, onSelect) {
     const grid = $('level-grid');
     grid.innerHTML = '';
 
-    levels.forEach((level, index) => {
+    // Update Campaign Summary Banner
+    const summary = getProgressSummary(progress, levels.length);
+    const starsEl = $('summary-stars');
+    const compEl = $('summary-completed');
+    if (starsEl) starsEl.textContent = `★ ${summary.starsEarned}/${summary.maxStars}`;
+    if (compEl) compEl.textContent = `${summary.completedLevels}/${summary.totalLevels}`;
+
+    const quickBtn = $('quick-play-button');
+    if (quickBtn) {
+        const nextIndex = Math.min(progress.unlocked, levels.length - 1);
+        quickBtn.textContent = `Play Level ${roman(nextIndex + 1)}`;
+        quickBtn.onclick = () => onSelect(nextIndex);
+    }
+
+    // Filter levels
+    const filteredLevels = levels.filter((lvl) => {
+        if (currentTierFilter === 'all') return true;
+        return String(lvl.tier) === String(currentTierFilter);
+    });
+
+    filteredLevels.forEach((level) => {
+        const index = level.id - 1;
         const locked = index > progress.unlocked;
+        const isNext = index === progress.unlocked;
         const record = progress.levels[index];
         const stars = record ? record.stars : 0;
 
         const card = document.createElement('button');
-        card.className = 'level-card';
+        card.className = `level-card tier-${level.tier}` + (isNext && !locked ? ' next-recommended' : '');
         card.disabled = locked;
 
         const chips = [`<span>${level.orbs.length} orbs</span>`];
         if (level.keys.length) chips.push(`<span>${level.keys.length === 1 ? '1 key' : level.keys.length + ' keys'}</span>`);
         if (level.sentinels.length) {
             chips.push(`<span>${level.sentinels.length === 1 ? '1 sentinel' : level.sentinels.length + ' sentinels'}</span>`);
+        }
+        if (level.visibility === 'dim') {
+            chips.push('<span class="chip-dim">dim light</span>');
+        } else if (level.visibility === 'dark') {
+            chips.push('<span class="chip-dark">darkness</span>');
         }
 
         const starText = [0, 1, 2]
@@ -172,18 +213,25 @@ export function renderLevelGrid(levels, progress, onSelect) {
 
         card.innerHTML = locked
             ? `
-                <span class="tablet-numeral">${roman(index + 1)}</span>
-                <span class="tablet-name">Sealed</span>
-                <span class="tablet-meta">Finish level ${roman(index)} to open this one.</span>
+                <div class="card-top">
+                    <span class="card-tier tier-${level.tier}">Tier ${roman(level.tier)}</span>
+                    <span class="tablet-numeral">${roman(level.id)}</span>
+                </div>
+                <span class="tablet-name">Sealed Chamber</span>
+                <span class="tablet-meta">Conquer Level ${roman(level.id - 1)} to unlock.</span>
                 <svg class="icon tablet-lock"><use href="#i-lock"/></svg>
             `
             : `
-                <span class="tablet-numeral">${roman(index + 1)}</span>
+                <div class="card-top">
+                    <span class="card-tier tier-${level.tier}">Tier ${roman(level.tier)}: ${level.tierName}</span>
+                    <span class="tablet-numeral">${roman(level.id)}</span>
+                </div>
                 <span class="tablet-name">${level.name}</span>
+                <span class="tablet-objective">${level.objective || ''}</span>
                 <span class="tablet-meta">${chips.join('')}</span>
                 <span class="tablet-foot">
                     <span class="tablet-times">
-                        <span>${record ? 'Best ' + formatTime(record.best) : 'Not played yet'}</span>
+                        <span>${record ? 'Best ' + formatTime(record.best) : 'Not played'}</span>
                         <span>Par ${formatTime(level.par)}</span>
                     </span>
                     <span class="tablet-stars">${starText}</span>
@@ -195,15 +243,29 @@ export function renderLevelGrid(levels, progress, onSelect) {
     });
 }
 
+export function setupTierTabs(levels, progress, onSelect) {
+    const tabs = document.querySelectorAll('.tier-tab');
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            tabs.forEach((t) => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentTierFilter = tab.getAttribute('data-tier');
+            renderLevelGrid(levels, progress, onSelect);
+        });
+    });
+}
+
 // ----------------------------------------
-// Level complete screen
+// Results Screen
 // ----------------------------------------
 
 export function showResults(result) {
-    $('victory-title').textContent = result.isLastLevel ? 'You conquered the labyrinth' : 'You escaped';
-    $('victory-name').textContent = `Level ${roman(result.levelNumber)}, ${result.levelName}`;
+    const isLevel10 = result.isLastLevel;
+    $('victory-title').textContent = isLevel10 ? 'THE ARCHITECT IS CONQUERED' : 'You Escaped!';
+    $('victory-name').textContent = isLevel10
+        ? 'Level X: The Architect\'s Trial &bull; All 10 Mazes Mastered!'
+        : `Level ${roman(result.levelNumber)}, ${result.levelName}`;
 
-    // Stars
     const starElements = document.querySelectorAll('#victory-stars .star');
     starElements.forEach((star, i) => {
         star.classList.remove('earned');
@@ -215,7 +277,6 @@ export function showResults(result) {
         }
     });
 
-    // What each star needed
     $('res-orbs-text').textContent = `Collect every orb, ${result.orbsCollected} of ${result.orbsTotal}`;
     $('res-par-text').textContent = `Finish under par, ${formatTime(result.par)}`;
     $('res-orbs').classList.toggle('earned', result.orbsCollected === result.orbsTotal);
@@ -229,7 +290,7 @@ export function showResults(result) {
 }
 
 // ----------------------------------------
-// Pause menu
+// Settings & Pause
 // ----------------------------------------
 
 export function setPauseInfo(text) {
@@ -250,8 +311,15 @@ export function setQualityLabel(quality) {
     $('quality-button').textContent = quality === 'detailed' ? 'Detailed' : 'Smooth';
 }
 
+export function setHeadBobLabel(enabled) {
+    const button = $('headbob-button');
+    if (!button) return;
+    button.textContent = enabled ? 'On' : 'Off';
+    button.classList.toggle('off', !enabled);
+}
+
 // ----------------------------------------
-// 3-2-1 countdown
+// 3-2-1 Countdown
 // ----------------------------------------
 
 const countdownElement = $('countdown');
@@ -262,7 +330,6 @@ export function showCountdown(text, go = false) {
     countdownElement.classList.remove('hidden');
     countdownElement.classList.toggle('go', go);
 
-    // Restart the pop animation for every new number
     countdownText.style.animation = 'none';
     void countdownText.offsetWidth;
     countdownText.style.animation = '';

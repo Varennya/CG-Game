@@ -1,7 +1,6 @@
 // ========================================
 // SAVED PROGRESS AND SETTINGS (localStorage)
-// Every access is wrapped in try/catch because storage can be
-// unavailable (private windows, blocked site data, etc.)
+// Safe wrappers with fallback handling.
 // ========================================
 
 const PROGRESS_KEY = 'mazeExplorer.progress.v1';
@@ -20,14 +19,16 @@ function write(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-        // Ignore: the game still works, progress just won't persist
+        // Fallback for private windows
     }
 }
 
-// progress = { unlocked: <highest unlocked level index>, levels: { [index]: { best, stars } } }
 export function loadProgress() {
     const progress = read(PROGRESS_KEY, { unlocked: 0, levels: {} });
     progress.levels = progress.levels || {};
+    if (typeof progress.unlocked !== 'number' || isNaN(progress.unlocked)) {
+        progress.unlocked = 0;
+    }
     return progress;
 }
 
@@ -35,7 +36,33 @@ export function saveProgress(progress) {
     write(PROGRESS_KEY, progress);
 }
 
-// Records a finished level. Returns whether it was a new best time.
+export function resetProgress() {
+    const fresh = { unlocked: 0, levels: {} };
+    saveProgress(fresh);
+    return fresh;
+}
+
+export function getProgressSummary(progress, totalLevels = 10) {
+    let starsEarned = 0;
+    let completedLevels = 0;
+
+    for (let i = 0; i < totalLevels; i++) {
+        const record = progress.levels[i];
+        if (record) {
+            completedLevels++;
+            starsEarned += record.stars || 0;
+        }
+    }
+
+    return {
+        starsEarned,
+        maxStars: totalLevels * 3,
+        completedLevels,
+        totalLevels,
+        unlocked: progress.unlocked
+    };
+}
+
 export function recordResult(progress, index, time, stars, levelCount) {
     const previous = progress.levels[index];
     const isNewBest = !previous || time < previous.best;
@@ -52,7 +79,7 @@ export function recordResult(progress, index, time, stars, levelCount) {
 }
 
 export function loadSettings() {
-    return read(SETTINGS_KEY, { sensitivity: 1, muted: false, quality: 'smooth' });
+    return read(SETTINGS_KEY, { sensitivity: 1, muted: false, quality: 'smooth', headBob: true });
 }
 
 export function saveSettings(settings) {

@@ -1,7 +1,13 @@
 // ========================================
-// WORLD
-// Builds the 3D scene for one level: floor, instanced walls,
-// start/exit markers, orbs, keys, doors and patrolling sentinels.
+// WORLD CONSTRUCTION & 3D ENVIRONMENT
+// Builds the 3D scene for each level:
+//   - Tier-specific procedural stone walls and floors
+//   - InstancedMesh for optimal draw-call efficiency
+//   - Start & Exit portal with towering radiant beacon
+//   - Collectible orbs with harmonic floating/rotation
+//   - Color-coded keys and glowing locked doors
+//   - Patrolling ancient sentinels with energy halos
+//   - Atmospheric drifting dust motes in torchlight
 // ========================================
 
 import * as THREE from 'three';
@@ -10,12 +16,19 @@ import { getStoneTextures } from './textures.js';
 
 export const WALL_HEIGHT = 2.5;
 
+const CEILING_TINTS = {
+    sunstone: 0x9a8a72,
+    mossy: 0x76876a,
+    slate: 0x5a6a7a,
+    obsidian: 0x362c33
+};
+
 export function createWorld(scene, light, level) {
     const { rows, cols } = level;
     const group = new THREE.Group();
     scene.add(group);
 
-    // A private copy of the grid: doors become floor when they open
+    // Private copy of the maze grid: doors become '.' when unlocked
     const grid = level.grid.map((row) => row.slice());
 
     const mazeWidth = cols * CELL_SIZE;
@@ -36,14 +49,12 @@ export function createWorld(scene, light, level) {
     }
 
     // ----------------------------------------
-    // Fog of war for the minimap: cells you have charted
+    // Fog of war for the minimap: cells charted by the player
     // ----------------------------------------
     const explored = Array.from({ length: rows }, () => Array(cols).fill(false));
-    let mapVersion = 0;       // goes up whenever the map needs redrawing
+    let mapVersion = 0;
     let lastRevealed = -1;
 
-    // You chart the cell you stand on and the cells next to it, this many steps
-    // through open passages, plus every wall and door touching them.
     const REVEAL_STEPS = 2;
 
     function reveal(row, col) {
@@ -91,7 +102,7 @@ export function createWorld(scene, light, level) {
     }
 
     // ----------------------------------------
-    // Shadows: size the light's shadow box to this maze
+    // Shadows: size the light's shadow camera to this maze
     // ----------------------------------------
     const half = Math.hypot(mazeWidth, mazeDepth) / 2 + 2;
     light.shadow.camera.left = -half;
@@ -103,9 +114,9 @@ export function createWorld(scene, light, level) {
     light.shadow.camera.updateProjectionMatrix();
 
     // ----------------------------------------
-    // Floor and ceiling (flagstones, one texture tile per maze cell)
+    // Floor and Ceiling (Procedural textures by theme)
     // ----------------------------------------
-    const textures = getStoneTextures();
+    const textures = getStoneTextures(level.theme || 'sunstone');
 
     function tiledPlane(material, flip) {
         const geometry = new THREE.PlaneGeometry(mazeWidth, mazeDepth);
@@ -124,15 +135,16 @@ export function createWorld(scene, light, level) {
     floor.receiveShadow = true;
     group.add(floor);
 
+    const ceilingTint = CEILING_TINTS[level.theme] || CEILING_TINTS.sunstone;
     const ceiling = tiledPlane(
-        new THREE.MeshLambertMaterial({ map: textures.floor, color: 0x9a8a72 }),
+        new THREE.MeshLambertMaterial({ map: textures.floor, color: ceilingTint }),
         true
     );
     ceiling.position.y = WALL_HEIGHT;
     group.add(ceiling);
 
     // ----------------------------------------
-    // Walls: one InstancedMesh instead of one mesh per wall
+    // Walls: InstancedMesh for high performance
     // ----------------------------------------
     let wallCount = 0;
     for (let r = 0; r < rows; r++) {
@@ -166,7 +178,7 @@ export function createWorld(scene, light, level) {
     group.add(walls);
 
     // ----------------------------------------
-    // Start and exit markers
+    // Start and Exit Markers + Radiant Exit Beacon
     // ----------------------------------------
     function addMarker(cell, color, intensity) {
         const p = toWorld(cell.row, cell.col);
@@ -190,11 +202,90 @@ export function createWorld(scene, light, level) {
 
     const exitRing = new THREE.Mesh(
         new THREE.TorusGeometry(0.65, 0.06, 8, 32),
-        new THREE.MeshStandardMaterial({ color: 0xffc04d, emissive: 0xffa21f, emissiveIntensity: 2 })
+        new THREE.MeshStandardMaterial({ color: 0xffc04d, emissive: 0xffa21f, emissiveIntensity: 2.5 })
     );
     exitRing.rotation.x = Math.PI / 2;
     exitRing.position.set(exitPosition.x, 0.2, exitPosition.z);
     group.add(exitRing);
+
+    // Glowing exit beacon visible from distance through corridors
+    const beaconGroup = new THREE.Group();
+    beaconGroup.position.set(exitPosition.x, WALL_HEIGHT / 2, exitPosition.z);
+
+    const beamOuter = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.45, WALL_HEIGHT, 16, 1, true),
+        new THREE.MeshBasicMaterial({
+            color: 0xf0a63a,
+            transparent: true,
+            opacity: 0.32,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        })
+    );
+    beaconGroup.add(beamOuter);
+
+    const beamInner = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.16, WALL_HEIGHT, 12, 1, true),
+        new THREE.MeshBasicMaterial({
+            color: 0xffefb8,
+            transparent: true,
+            opacity: 0.65,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        })
+    );
+    beaconGroup.add(beamInner);
+
+    const beamRing1 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.42, 0.03, 8, 24),
+        new THREE.MeshBasicMaterial({ color: 0xffcc55, blending: THREE.AdditiveBlending })
+    );
+    beamRing1.rotation.x = Math.PI / 2;
+    beamRing1.position.y = -0.3;
+    beaconGroup.add(beamRing1);
+
+    const beamRing2 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.38, 0.03, 8, 24),
+        new THREE.MeshBasicMaterial({ color: 0xffcc55, blending: THREE.AdditiveBlending })
+    );
+    beamRing2.rotation.x = Math.PI / 2;
+    beamRing2.position.y = 0.5;
+    beaconGroup.add(beamRing2);
+
+    group.add(beaconGroup);
+
+    // ----------------------------------------
+    // Atmospheric Dust Motes in Torchlight
+    // ----------------------------------------
+    const DUST_COUNT = 75;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPositions = new Float32Array(DUST_COUNT * 3);
+    const dustOffsets = [];
+
+    for (let i = 0; i < DUST_COUNT; i++) {
+        const ox = (Math.random() - 0.5) * 8;
+        const oy = Math.random() * (WALL_HEIGHT - 0.4) + 0.2;
+        const oz = (Math.random() - 0.5) * 8;
+        dustPositions[i * 3 + 0] = ox;
+        dustPositions[i * 3 + 1] = oy;
+        dustPositions[i * 3 + 2] = oz;
+        dustOffsets.push({ ox, oy, oz, speed: 0.5 + Math.random() * 0.8 });
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+
+    const dustMat = new THREE.PointsMaterial({
+        color: 0xffdeb0,
+        size: 0.045,
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+
+    const dustParticles = new THREE.Points(dustGeo, dustMat);
+    group.add(dustParticles);
 
     // ----------------------------------------
     // Orbs
@@ -292,7 +383,6 @@ export function createWorld(scene, light, level) {
         door.open = true;
         grid[door.row][door.col] = '.';
 
-        // The map shows the door as floor now, and passages behind it can be charted
         mapVersion++;
         lastRevealed = -1;
     }
@@ -367,10 +457,21 @@ export function createWorld(scene, light, level) {
         sentinel.position.z = a.z + (b.z - a.z) * frac;
     }
 
+    function getMinSentinelDist(px, pz) {
+        if (!sentinels.length) return Infinity;
+        let minDist = Infinity;
+        for (const s of sentinels) {
+            const d = Math.hypot(px - s.position.x, pz - s.position.z);
+            if (d < minDist) minDist = d;
+        }
+        return minDist;
+    }
+
     // ----------------------------------------
-    // Per-frame animation. `moving` is false while paused / in menus.
+    // Per-frame Animation
     // ----------------------------------------
-    function update(time, delta, moving) {
+    function update(time, delta, moving, playerPos) {
+        // Collectibles animation
         orbs.forEach((orb) => {
             if (orb.collected) return;
             orb.mesh.rotation.y += delta * 2;
@@ -383,8 +484,28 @@ export function createWorld(scene, light, level) {
             key.mesh.position.y = 1 + Math.sin(time * 2.2) * 0.1;
         });
 
+        // Exit beacon animations
         exitRing.rotation.z += delta * 1.5;
+        beamOuter.rotation.y += delta * 0.5;
+        beamInner.rotation.y -= delta * 0.8;
+        beamRing1.rotation.z += delta * 1.6;
+        beamRing2.rotation.z -= delta * 1.2;
 
+        // Dust particles follow player space
+        if (playerPos) {
+            dustParticles.position.set(playerPos.x, 0, playerPos.z);
+            const posAttr = dustGeo.attributes.position;
+            const posArr = posAttr.array;
+
+            for (let i = 0; i < DUST_COUNT; i++) {
+                const off = dustOffsets[i];
+                let y = off.oy + Math.sin(time * off.speed + i) * 0.25;
+                posArr[i * 3 + 1] = y;
+            }
+            posAttr.needsUpdate = true;
+        }
+
+        // Doors opening
         doors.forEach((door) => {
             if (!door.open || door.progress >= 1) return;
 
@@ -395,6 +516,7 @@ export function createWorld(scene, light, level) {
             if (door.progress >= 1) door.mesh.visible = false;
         });
 
+        // Sentinels movement & animation
         sentinels.forEach((sentinel) => {
             if (moving) {
                 if (sentinel.pause > 0) {
@@ -441,7 +563,6 @@ export function createWorld(scene, light, level) {
         });
     }
 
-    // A wall, or a door that is still locked
     function isBlocked(row, col) {
         const ch = grid[row]?.[col];
         return ch === undefined || ch === '#' || (ch >= 'A' && ch <= 'C');
@@ -464,6 +585,7 @@ export function createWorld(scene, light, level) {
         isBlocked,
         openDoor,
         update,
-        dispose
+        dispose,
+        getMinSentinelDist
     };
 }

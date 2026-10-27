@@ -1,10 +1,15 @@
 // ========================================
-// SOUND EFFECTS (all generated with the Web Audio API)
+// SOUND EFFECTS & PROCEDURAL AUDIO (Web Audio API)
+// Synthesized audio waveforms with no external audio assets.
 // ========================================
 
 let audioContext = null;
 let masterGain = null;
 let muted = false;
+
+// Continuous sentinel proximity drone
+let sentinelOsc = null;
+let sentinelGain = null;
 
 function getAudioContext() {
     if (!audioContext) {
@@ -26,6 +31,10 @@ export function setMuted(value) {
 
     if (masterGain) {
         masterGain.gain.value = muted ? 0 : 1;
+    }
+
+    if (muted) {
+        stopSentinelHum();
     }
 }
 
@@ -84,37 +93,42 @@ export function playVictorySound() {
     playTone(1046.5, 0.6, 'sine', 0.3, 0.54);
 }
 
+export function playGrandVictorySound() {
+    // Majestic fanfare for completing Level 10 (Architect's Trial)
+    playTone(523.25, 0.35, 'triangle', 0.35, 0);
+    playTone(659.25, 0.35, 'triangle', 0.35, 0.2);
+    playTone(783.99, 0.4, 'triangle', 0.35, 0.4);
+    playTone(1046.5, 0.5, 'triangle', 0.35, 0.6);
+    playTone(1318.5, 0.8, 'sine', 0.4, 0.85);
+    playTone(1567.98, 1.2, 'sine', 0.35, 1.1);
+}
+
 export function playFootstep() {
     playSweep(110, 55, 0.09, 'triangle', 0.12);
 }
 
-// Orb pickup: a short rising chime
 export function playOrbSound() {
     playTone(880, 0.12, 'sine', 0.18, 0);
     playTone(1318.5, 0.22, 'sine', 0.16, 0.07);
 }
 
-// Key pickup: two bright notes
 export function playKeySound() {
     playTone(659.25, 0.14, 'triangle', 0.22, 0);
     playTone(987.77, 0.14, 'triangle', 0.22, 0.1);
     playTone(1318.5, 0.35, 'triangle', 0.2, 0.2);
 }
 
-// Door unlock: a click followed by a low rumble
 export function playDoorSound() {
     playTone(1800, 0.05, 'square', 0.1, 0);
     playTone(1400, 0.05, 'square', 0.1, 0.08);
     playSweep(140, 60, 0.6, 'sawtooth', 0.14, 0.15);
 }
 
-// Locked door bump
 export function playLockedSound() {
     playTone(150, 0.12, 'square', 0.12, 0);
     playTone(120, 0.16, 'square', 0.12, 0.1);
 }
 
-// Sentinel hit: a harsh descending buzz
 export function playHitSound() {
     playSweep(420, 70, 0.5, 'sawtooth', 0.22);
     playTone(90, 0.4, 'square', 0.15, 0);
@@ -124,7 +138,10 @@ export function playClickSound() {
     playTone(620, 0.05, 'sine', 0.1);
 }
 
-// Countdown: a soft tick for 3, 2, 1 and a brighter two-note "go"
+export function playLabClick() {
+    playTone(820, 0.04, 'triangle', 0.08);
+}
+
 export function playCountdownTick() {
     playTone(392, 0.14, 'triangle', 0.18);
 }
@@ -132,4 +149,43 @@ export function playCountdownTick() {
 export function playCountdownGo() {
     playTone(523.25, 0.18, 'triangle', 0.22);
     playTone(783.99, 0.4, 'triangle', 0.22, 0.08);
+}
+
+// ----------------------------------------
+// Sentinel Proximity Hum
+// ----------------------------------------
+export function updateSentinelHum(dist) {
+    if (muted || dist > 7) {
+        stopSentinelHum();
+        return;
+    }
+
+    const audio = getAudioContext();
+    if (!sentinelOsc) {
+        sentinelOsc = audio.createOscillator();
+        sentinelGain = audio.createGain();
+
+        sentinelOsc.type = 'sawtooth';
+        sentinelOsc.frequency.setValueAtTime(65, audio.currentTime);
+
+        sentinelGain.gain.setValueAtTime(0, audio.currentTime);
+
+        sentinelOsc.connect(sentinelGain);
+        sentinelGain.connect(masterGain);
+        sentinelOsc.start();
+    }
+
+    // Closer distance = higher volume and slightly higher pitch
+    const intensity = Math.max(0, Math.min(1, (7 - dist) / 5.5));
+    const targetVol = intensity * 0.14;
+    const targetFreq = 65 + intensity * 45;
+
+    sentinelGain.gain.setTargetAtTime(targetVol, audio.currentTime, 0.1);
+    sentinelOsc.frequency.setTargetAtTime(targetFreq, audio.currentTime, 0.1);
+}
+
+export function stopSentinelHum() {
+    if (sentinelGain && audioContext) {
+        sentinelGain.gain.setTargetAtTime(0, audioContext.currentTime, 0.1);
+    }
 }

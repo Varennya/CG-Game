@@ -5,31 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#15120f">
 
-    <title>Maze Explorer 3D</title>
+    <title>Maze Explorer 3D: Ultimate Edition</title>
 
-    <!-- Cinzel is used only for carved titles and numerals; Alegreya for everything else.
-         If the fonts cannot load, the page falls back to Georgia / serif. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Cinzel:wght@500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Cinzel:wght@500;700;900&display=swap">
 
     <link rel="stylesheet" href="/src/style.css">
 </head>
 
 <body>
 
-    <!-- Icon sprite: drawn once, reused with <use> -->
+    <!-- SVG Icon Sprite -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <defs>
             <symbol id="i-orb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/><circle cx="9.5" cy="9.5" r="2.2" fill="#fff" opacity=".55"/></symbol>
             <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11.5 12H22M18 12v4M21 12v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
-            <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7.5 3c0 5.5 4.5 6 4.5 9s-4.5 3.500-4.500 9M16.500 3c0 5.500-4.500 6-4.500 9s4.500 3.500 4.500 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-            <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3.500 18.500 2.500 7.500l5.500 4.500L12 4.500l4 7.500 5.500-4.500-1 11z" fill="currentColor"/></symbol>
-            <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5.500l3.500 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+            <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7.5 3c0 5.5 4.5 6 4.5 9s-4.5 3.5-4.5 9M16.5 3c0 5.5-4.5 6-4.5 9s4.5 3.5 4.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+            <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3.5 18.5 2.5 7.5l5.5 4.5L12 4.5l4 7.5 5.5-4.5-1 11z" fill="currentColor"/></symbol>
+            <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5.5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
             <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
-            <symbol id="i-restart" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.400-5.700M20 4v5.500h-5.500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-            <symbol id="i-sigil" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM7 7h10v10H7zM3 12h4M17 12h4M12 3v4M12 17v4M10.500 10.500h3v3h-3z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
-            <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="1.500" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+            <symbol id="i-restart" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5.5h-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+            <symbol id="i-sigil" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM7 7h10v10H7zM3 12h4M17 12h4M12 3v4M12 17v4M10.5 10.5h3v3h-3z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+            <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="1.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+            <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5M12 16.5v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+            <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><polygon points="12 8 15 15 12 13 9 15" fill="currentColor"/></symbol>
+            <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
         </defs>
     </svg>
 
@@ -37,18 +38,28 @@
 
         <div id="vignette"></div>
 
+        <!-- TOP HUD -->
         <header class="top-bar">
 
             <div class="brand">
                 <svg class="icon brand-sigil"><use href="#i-sigil"/></svg>
-                <span>Maze Explorer</span>
+                <div class="brand-text">
+                    <span class="brand-title">Maze Explorer 3D</span>
+                    <span class="brand-sub">Ultimate Edition</span>
+                </div>
             </div>
 
-            <!-- The lintel: level name carved above the passage, stats beneath -->
+            <!-- Lintel panel -->
             <div class="lintel slab">
-                <div class="lintel-title">
+                <div class="lintel-header">
+                    <span id="hud-tier-badge" class="badge-tier tier-1">Tier I</span>
                     <span id="hud-level-num" class="numeral">I</span>
                     <strong id="hud-level-name">First Steps</strong>
+                </div>
+
+                <div id="hud-objective-wrap" class="hud-objective">
+                    <svg class="icon"><use href="#i-compass"/></svg>
+                    <span id="hud-objective">Explore the ruins and reach the golden exit portal.</span>
                 </div>
 
                 <div class="lintel-stats">
@@ -62,7 +73,7 @@
                         <span id="hud-keys" class="key-slots"></span>
                     </span>
 
-                    <span class="stat" title="Par time: finish under this for a star">
+                    <span class="stat" title="Par time">
                         <svg class="icon"><use href="#i-hourglass"/></svg>
                         <span>par <b id="hud-par">--:--</b></span>
                     </span>
@@ -81,7 +92,7 @@
                 </div>
 
                 <div class="icon-buttons">
-                    <button id="pause-button" class="icon-button" title="Pause (P)" aria-label="Pause">
+                    <button id="pause-button" class="icon-button" title="Pause (P or Esc)" aria-label="Pause">
                         <svg class="icon"><use href="#i-pause"/></svg>
                     </button>
                     <button id="restart-button" class="icon-button" title="Restart level" aria-label="Restart level">
@@ -94,9 +105,9 @@
 
         <div id="crosshair"></div>
 
+        <!-- Minimap -->
         <aside class="minimap-panel slab">
             <canvas id="minimap" width="195" height="195"></canvas>
-
             <div class="map-legend">
                 <span><i class="legend-player"></i>you</span>
                 <span><i class="legend-exit"></i>exit</span>
@@ -106,45 +117,104 @@
         </aside>
 
         <div id="countdown" class="hidden"><span id="countdown-text"></span></div>
-
         <div id="toast"></div>
         <div id="damage-flash"></div>
 
-        <!-- TITLE -->
+        <!-- TITLE OVERLAY -->
         <div id="start-overlay" class="overlay">
-            <div class="title-screen">
+            <div class="title-screen slab">
                 <svg class="icon title-sigil"><use href="#i-sigil"/></svg>
-                <h1 class="game-title">Maze Explorer</h1>
-                <p class="tagline">Find the way out of the ruins.</p>
+                <h1 class="game-title">Maze Explorer 3D</h1>
+                <div class="edition-banner">Ultimate Edition</div>
+                <p class="tagline">Ten progressive levels across four ancient difficulty tiers.</p>
 
                 <div class="title-buttons">
                     <button id="start-button" class="primary-button">Start exploring</button>
-                    <button id="levels-button" class="secondary-button">Level select</button>
+                    <button id="levels-button" class="secondary-button">Level select (10)</button>
+                    <button id="help-button" class="secondary-button"><svg class="icon"><use href="#i-help"/></svg> How to play</button>
                 </div>
 
                 <p class="title-hint">
-                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move,
-                    the mouse to look, <kbd>Esc</kbd> to pause.
+                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk &bull;
+                    mouse look &bull; <kbd>Esc</kbd> / <kbd>P</kbd> pause
                 </p>
             </div>
         </div>
 
-        <!-- LEVEL SELECT -->
+        <!-- LEVEL SELECT OVERLAY -->
         <div id="levels-overlay" class="overlay hidden">
             <div class="panel-card slab wide-card">
-                <h2>Choose a level</h2>
-                <p class="description">
-                    Earn a star for escaping, one for collecting every orb,
-                    and one for beating the par time.
-                </p>
+                <div class="level-select-header">
+                    <h2>Select Level</h2>
+                    <p class="description">
+                        Earn 3 stars per level: escape, collect all orbs, and beat par time.
+                    </p>
+                </div>
 
+                <!-- Campaign Summary Banner -->
+                <div class="campaign-summary slab">
+                    <div class="summary-stat">
+                        <span>Campaign Stars</span>
+                        <strong id="summary-stars">★ 0/30</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Levels Conquered</span>
+                        <strong id="summary-completed">0/10</strong>
+                    </div>
+                    <button id="quick-play-button" class="primary-button compact">Play Next</button>
+                </div>
+
+                <!-- Tier Filter Tabs -->
+                <div class="tier-tabs">
+                    <button class="tier-tab active" data-tier="all">All (10)</button>
+                    <button class="tier-tab" data-tier="1">Tier I: Beginner</button>
+                    <button class="tier-tab" data-tier="2">Tier II: Intermediate</button>
+                    <button class="tier-tab" data-tier="3">Tier III: Advanced</button>
+                    <button class="tier-tab" data-tier="4">Tier IV: Expert</button>
+                </div>
+
+                <!-- 10 Level Cards Grid -->
                 <div id="level-grid" class="level-grid"></div>
 
-                <button id="levels-back-button" class="secondary-button wide">Back</button>
+                <div class="level-select-footer">
+                    <button id="levels-back-button" class="secondary-button">Back to Menu</button>
+                    <button id="reset-progress-button" class="danger-button"><svg class="icon"><use href="#i-trash"/></svg> Reset Progress</button>
+                </div>
             </div>
         </div>
 
-        <!-- PAUSE -->
+        <!-- HOW TO PLAY OVERLAY -->
+        <div id="help-overlay" class="overlay hidden">
+            <div class="panel-card slab">
+                <h2>How to Play</h2>
+                <div class="help-grid">
+                    <div class="help-item">
+                        <strong>Movement & Navigation</strong>
+                        <p>Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to move. Move the mouse to rotate the first-person perspective camera. Press <kbd>P</kbd> or <kbd>Esc</kbd> to pause.</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>Keys & Sealed Doors</strong>
+                        <p>Doors are sealed by ancient locks. Walk over a glowing Amber, Magenta, or Green key to collect it, then approach its matching door to unlock it.</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>Patrolling Sentinels</strong>
+                        <p>Ancient sentinels patrol the corridors. If a sentinel touches you, you will be repelled and suffer a <strong>+10s time penalty</strong>. Listen for the sentinel hum!</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>Radiant Exit Beacon</strong>
+                        <p>A towering beam of golden light marks the exit portal. Spot it down long corridors and through the mist to guide your escape.</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>Three-Star Rating</strong>
+                        <p>★ 1 Star: Escape the maze<br>★ 2 Stars: Collect every glowing orb<br>★ 3 Stars: Beat the par benchmark time</p>
+                    </div>
+                </div>
+                <button id="help-back-button" class="primary-button">Got it</button>
+            </div>
+        </div>
+
+
+        <!-- PAUSE OVERLAY -->
         <div id="pause-overlay" class="overlay hidden">
             <div class="panel-card slab">
                 <h2>Paused</h2>
@@ -165,7 +235,12 @@
                     <label for="quality-button">Graphics</label>
                     <button id="quality-button" class="toggle-button">Smooth</button>
                 </div>
-                <p class="setting-note" id="quality-note">Smooth runs best on laptops. Detailed adds shadows and full resolution.</p>
+                <p class="setting-note">Smooth runs light on GPU. Detailed enables full resolution and PCF shadow maps.</p>
+
+                <div class="setting-row">
+                    <label for="headbob-button">Walking Head-Bob</label>
+                    <button id="headbob-button" class="toggle-button">On</button>
+                </div>
 
                 <button id="resume-button" class="primary-button">Resume</button>
 
@@ -176,7 +251,7 @@
             </div>
         </div>
 
-        <!-- LEVEL COMPLETE -->
+        <!-- LEVEL COMPLETE OVERLAY -->
         <div id="victory-flash"></div>
         <div id="victory-overlay" class="overlay hidden">
             <div class="panel-card slab">
@@ -208,6 +283,20 @@
                 <div class="button-row">
                     <button id="replay-button" class="secondary-button">Replay</button>
                     <button id="victory-levels-button" class="secondary-button">Level select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESET CONFIRMATION MODAL -->
+        <div id="reset-modal" class="overlay hidden">
+            <div class="panel-card slab dialog-card">
+                <h2>Reset Campaign?</h2>
+                <p class="description">
+                    This will lock all levels from Level 2 to 10 and clear your star records. Are you sure?
+                </p>
+                <div class="button-row">
+                    <button id="confirm-reset-button" class="danger-button wide">Yes, Reset</button>
+                    <button id="cancel-reset-button" class="secondary-button wide">Cancel</button>
                 </div>
             </div>
         </div>

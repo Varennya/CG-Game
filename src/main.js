@@ -4,7 +4,7 @@ import { getLevel, LEVEL_COUNT, PLAYER_SPEED, KEY_NAMES } from './levels.js';
 import { createWorld } from './world.js';
 import { drawMinimap } from './minimap.js';
 import * as sound from './audio.js';
-import { loadProgress, recordResult, loadSettings, saveSettings } from './storage.js';
+import { loadProgress, recordResult, loadSettings, saveSettings, resetProgress } from './storage.js';
 import * as ui from './ui.js';
 
 // ========================================
@@ -30,7 +30,6 @@ const renderer = new THREE.WebGLRenderer({
     powerPreference: 'high-performance'
 });
 renderer.shadowMap.type = THREE.PCFShadowMap;
-// Filmic tone mapping keeps the torch-lit stone from blowing out to flat orange
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 
@@ -38,14 +37,10 @@ document.body.appendChild(renderer.domElement);
 
 // ========================================
 // 2. LIGHTING
-//   - a dim warm ambient light so nothing is pitch black
-//   - a faint "moonlight" from above
-//   - a torch that travels with the player (the main light source)
-// Shadows are off by default. The torch sits at the camera, so everything
-// you can see is already lit by it; shadows only matter in Detailed mode.
 // ========================================
 
-scene.add(new THREE.AmbientLight(0x75654f, 0.6));
+const ambientLight = new THREE.AmbientLight(0x75654f, 0.6);
+scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffe2b0, 0.6);
 directionalLight.position.set(-6, 12, 6);
@@ -53,8 +48,8 @@ directionalLight.shadow.mapSize.width = 2048;
 directionalLight.shadow.mapSize.height = 2048;
 scene.add(directionalLight);
 
-const TORCH_INTENSITY = 13;
-const torch = new THREE.PointLight(0xffd0a0, TORCH_INTENSITY, 22, 1.9);
+let currentBaseTorchIntensity = 13;
+const torch = new THREE.PointLight(0xffd0a0, currentBaseTorchIntensity, 22, 1.9);
 scene.add(torch);
 
 // ========================================
@@ -65,7 +60,6 @@ scene.add(torch);
 let state = 'menu';
 let pausedFrom = 'playing';
 
-// The level is under way (or about to be): the mouse is captured and Esc pauses
 function isRunning() {
     return state === 'playing' || state === 'countdown';
 }
@@ -73,7 +67,6 @@ function isRunning() {
 const progress = loadProgress();
 const settings = loadSettings();
 
-// Graphics quality: 'smooth' is light on the GPU, 'detailed' adds shadows and full resolution
 function applyQuality() {
     const detailed = settings.quality === 'detailed';
 
@@ -82,7 +75,6 @@ function applyQuality() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, detailed ? 2 : 1.25));
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Materials must be rebuilt when shadows are switched on or off
     scene.traverse((object) => {
         if (!object.material) return;
         const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -107,12 +99,15 @@ const SENTINEL_HIT_RADIUS = 0.85;
 let invulnerableFor = 0;
 let lockedToastCooldown = 0;
 
-// Recent positions that were far from every sentinel; used to respawn after a hit
 const safeTrail = [];
 let safeTrailTimer = 0;
 
-// 3-2-1 countdown at the start of every level
-const COUNT_STEP = 0.85;   // seconds per number
+// Walking Head-Bob oscillation
+let headBobTimer = 0;
+let headBobOffset = 0;
+
+// 3-2-1 Countdown
+const COUNT_STEP = 0.85;
 let countdownTime = 0;
 let lastCountShown = -1;
 let goTimer = null;
@@ -130,13 +125,11 @@ function applyCameraRotation() {
     camera.rotation.x = pitch;
 }
 
-// Face down the first open corridor from the start cell
 function initialYaw(level) {
     const options = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
     for (const [dr, dc] of options) {
         const ch = level.grid[level.start.row + dr]?.[level.start.col + dc];
-
         if (ch !== undefined && ch !== '#') {
             return Math.atan2(-dc, -dr);
         }
@@ -150,6 +143,18 @@ function loadLevel(index) {
 
     levelIndex = index;
     const level = levels[index];
+
+    // Adapt fog, ambient light, and torch reach to the level's tier lighting
+    const lighting = level.lighting;
+    if (lighting) {
+        scene.fog.density = lighting.fogDensity;
+        ambientLight.intensity = lighting.ambient;
+        directionalLight.intensity = lighting.directional;
+        torch.distance = lighting.torchDistance;
+        torch.decay = lighting.torchDecay || 1.9;
+        currentBaseTorchIntensity = lighting.torchIntensity || 13;
+    }
+
     world = createWorld(scene, directionalLight, level);
 
     elapsedTime = 0;
@@ -160,6 +165,8 @@ function loadLevel(index) {
     lockedToastCooldown = 0;
     safeTrail.length = 0;
     safeTrailTimer = 0;
+    headBobTimer = 0;
+    headBobOffset = 0;
 
     const start = world.toWorld(level.start.row, level.start.col);
     camera.position.set(start.x, 1.6, start.z);
@@ -175,6 +182,12 @@ function loadLevel(index) {
     const record = progress.levels[index];
     ui.setLevelHUD(level, index, record ? record.best : undefined);
     ui.clearToast();
+
+    if (level.visibility === 'dim') {
+        ui.toast('The air grows cold and misty... Visibility is limited.', 'info', 3000);
+    } else if (level.visibility === 'dark') {
+        ui.toast('Deep darkness surrounds you. Keep your torch close.', 'warn', 3200);
+    }
 }
 
 // ========================================
@@ -188,7 +201,7 @@ function requestLock() {
         const result = renderer.domElement.requestPointerLock();
         if (result && result.catch) result.catch(() => {});
     } catch (error) {
-        // Pointer lock unavailable: the game still works with the keyboard
+        // Pointer lock unavailable fallback
     }
 }
 
@@ -201,14 +214,9 @@ renderer.domElement.addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
     isPointerLocked = document.pointerLockElement === renderer.domElement;
 
-    // Esc (or anything else that releases the mouse) pauses the game
     if (!isPointerLocked && isRunning()) {
         pauseGame();
     }
-});
-
-document.addEventListener('pointerlockerror', () => {
-    console.error('Mouse pointer lock could not be activated.');
 });
 
 document.addEventListener('mousemove', (event) => {
@@ -224,7 +232,7 @@ document.addEventListener('mousemove', (event) => {
 });
 
 // ========================================
-// 6. KEYBOARD
+// 6. KEYBOARD CONTROLS
 // ========================================
 
 const keys = {};
@@ -243,8 +251,6 @@ window.addEventListener('keydown', (event) => {
         keys[key] = true;
     }
 
-    // Esc releases the mouse (handled by pointerlockchange). These cover the
-    // cases where the mouse is not locked, and let P resume from the pause menu.
     if (key === 'p' || (key === 'escape' && isRunning())) {
         if (isRunning()) pauseGame();
         else if (state === 'paused') resumeGame();
@@ -320,7 +326,7 @@ function updateMovement(delta) {
     }
 
     const length = Math.hypot(moveX, moveZ);
-    if (length === 0) return;
+    if (length === 0) return false;
 
     moveX /= length;
     moveZ /= length;
@@ -329,9 +335,10 @@ function updateMovement(delta) {
     const nextX = camera.position.x + moveX * distance;
     const nextZ = camera.position.z + moveZ * distance;
 
-    // Check each axis separately so you slide along walls
     if (canMoveTo(nextX, camera.position.z)) camera.position.x = nextX;
     if (canMoveTo(camera.position.x, nextZ)) camera.position.z = nextZ;
+
+    return true;
 }
 
 // ========================================
@@ -371,10 +378,10 @@ function checkInteractions(delta) {
 
         sound.playKeySound();
         ui.setKeyState(key.id, 'held');
-        ui.toast(`You picked up the ${slugName(key.id)} key`, 'gold');
+        ui.toast(`You picked up the ${slugName(key.id)} key!`, 'gold');
     });
 
-    // Doors: walk up to one while holding its key to open it
+    // Doors
     world.doors.forEach((door) => {
         if (door.open || Math.hypot(px - door.x, pz - door.z) > 1.7) return;
 
@@ -411,7 +418,6 @@ function checkInteractions(delta) {
     }
 }
 
-// Remember places you were safely away from every sentinel
 function recordSafeTrail(delta) {
     safeTrailTimer -= delta;
     if (safeTrailTimer > 0) return;
@@ -433,12 +439,9 @@ function onSentinelHit() {
     const farFromSentinels = (p) =>
         world.sentinels.every((s) => Math.hypot(p.x - s.position.x, p.z - s.position.z) > 5);
 
-    // Newest recorded safe spot that is a few steps back and still safe now
     let target = null;
-
     for (let i = safeTrail.length - 1; i >= 0; i--) {
         const p = safeTrail[i];
-
         if (Math.hypot(p.x - px, p.z - pz) >= 6 && farFromSentinels(p)) {
             target = p;
             break;
@@ -459,7 +462,7 @@ function onSentinelHit() {
 
     sound.playHitSound();
     ui.flashDamage();
-    ui.toast(`Caught by a sentinel!  +${SENTINEL_PENALTY}s`, 'warn', 2500);
+    ui.toast(`Caught by a sentinel!  +${SENTINEL_PENALTY}s penalty`, 'warn', 2500);
 }
 
 // ========================================
@@ -476,7 +479,6 @@ function beginCountdown() {
     requestLock();
 }
 
-// The countdown has finished: the clock and the sentinels start now
 function startRun() {
     state = 'playing';
 
@@ -510,6 +512,7 @@ function pauseGame() {
     pausedFrom = state;
     state = 'paused';
     releaseAllKeys();
+    sound.stopSentinelHum();
 
     clearTimeout(goTimer);
     ui.hideCountdown();
@@ -523,7 +526,6 @@ function pauseGame() {
 function resumeGame() {
     if (state !== 'paused') return;
 
-    // Back to wherever the pause interrupted: the countdown or the run itself
     state = pausedFrom;
     lastCountShown = -1;
 
@@ -538,9 +540,17 @@ function completeLevel() {
     releaseAllKeys();
     clearTimeout(goTimer);
     ui.hideCountdown();
-    sound.playVictorySound();
+    sound.stopSentinelHum();
 
     const level = levels[levelIndex];
+    const isLevel10 = levelIndex === LEVEL_COUNT - 1;
+
+    if (isLevel10) {
+        sound.playGrandVictorySound();
+    } else {
+        sound.playVictorySound();
+    }
+
     const allOrbs = orbsCollected === level.orbs.length;
     const underPar = elapsedTime <= level.par;
     const stars = 1 + (allOrbs ? 1 : 0) + (underPar ? 1 : 0);
@@ -550,7 +560,7 @@ function completeLevel() {
     ui.showResults({
         levelNumber: levelIndex + 1,
         levelName: level.name,
-        isLastLevel: levelIndex === LEVEL_COUNT - 1,
+        isLastLevel: isLevel10,
         stars,
         orbsCollected,
         orbsTotal: level.orbs.length,
@@ -595,12 +605,12 @@ function openLevelSelect(from) {
 
 function refreshTitle() {
     const hasProgress = progress.unlocked > 0 || Object.keys(progress.levels).length > 0;
-
     ui.setStartButton(
-        hasProgress ? `Continue, level ${ui.roman(levelIndex + 1)}` : 'Start exploring'
+        hasProgress ? `Continue, Level ${ui.roman(levelIndex + 1)}` : 'Start exploring'
     );
 }
 
+// Start Screen Buttons
 document.getElementById('start-button').addEventListener('click', () => {
     sound.playStartSound();
     playLevel(Math.min(progress.unlocked, LEVEL_COUNT - 1));
@@ -617,11 +627,45 @@ document.getElementById('levels-back-button').addEventListener('click', () => {
     }
 });
 
+// How to Play Modal
+document.getElementById('help-button').addEventListener('click', () => {
+    ui.showOverlay('help');
+});
+
+document.getElementById('help-back-button').addEventListener('click', () => {
+    ui.showOverlay('title');
+    refreshTitle();
+});
+
+// Reset Progress Modal
+document.getElementById('reset-progress-button').addEventListener('click', () => {
+    ui.showOverlay('reset');
+});
+
+document.getElementById('confirm-reset-button').addEventListener('click', () => {
+    resetProgress();
+    progress.unlocked = 0;
+    progress.levels = {};
+    levelIndex = 0;
+    loadLevel(0);
+    refreshTitle();
+    ui.renderLevelGrid(levels, progress, (index) => {
+        sound.playStartSound();
+        playLevel(index);
+    });
+    ui.showOverlay('levels');
+    ui.toast('Campaign progress has been reset.', 'info');
+});
+
+document.getElementById('cancel-reset-button').addEventListener('click', () => {
+    ui.showOverlay('levels');
+});
+
 document.getElementById('restart-button').addEventListener('click', () => {
     if (isRunning() || state === 'paused') playLevel(levelIndex);
 });
 
-// Pause menu
+// Pause Menu
 document.getElementById('pause-button').addEventListener('click', pauseGame);
 document.getElementById('resume-button').addEventListener('click', resumeGame);
 document.getElementById('pause-restart-button').addEventListener('click', () => playLevel(levelIndex));
@@ -657,13 +701,24 @@ document.getElementById('quality-button').addEventListener('click', () => {
     applyQuality();
 });
 
-// Level complete
+ui.setHeadBobLabel(settings.headBob !== false);
+
+document.getElementById('headbob-button').addEventListener('click', () => {
+    settings.headBob = !(settings.headBob !== false);
+    ui.setHeadBobLabel(settings.headBob);
+    saveSettings(settings);
+});
+
+// Level Complete
 document.getElementById('next-level-button').addEventListener('click', () => {
     sound.playStartSound();
     playLevel(Math.min(levelIndex + 1, LEVEL_COUNT - 1));
 });
 document.getElementById('replay-button').addEventListener('click', () => playLevel(levelIndex));
 document.getElementById('victory-levels-button').addEventListener('click', () => openLevelSelect('complete'));
+
+// Initialize Tier Tabs
+ui.setupTierTabs(levels, progress, playLevel);
 
 // ========================================
 // 11. WINDOW RESIZING
@@ -672,7 +727,6 @@ document.getElementById('victory-levels-button').addEventListener('click', () =>
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -694,13 +748,11 @@ function animate() {
     lastFrameTime = now;
     const playing = state === 'playing';
 
-    // Behind menus nothing needs 60 fps; rendering less often saves battery and heat
     if (state === 'paused' || state === 'complete') {
         backgroundFrame++;
         if (backgroundFrame % 3 !== 0) return;
     }
 
-    // A slow look-around behind the title screen
     if (state === 'menu') {
         menuTime += delta;
         yaw = menuYaw + Math.sin(menuTime * 0.25) * 0.55;
@@ -716,15 +768,19 @@ function animate() {
         const previousX = camera.position.x;
         const previousZ = camera.position.z;
 
-        updateMovement(delta);
+        const moved = updateMovement(delta);
 
-        const moved =
-            Math.abs(camera.position.x - previousX) > 0.0001 ||
-            Math.abs(camera.position.z - previousZ) > 0.0001;
+        // Walking head-bob
+        if (moved && settings.headBob !== false) {
+            headBobTimer += delta * 10;
+            headBobOffset = Math.sin(headBobTimer) * 0.045;
+        } else {
+            headBobOffset *= Math.exp(-delta * 12);
+        }
+        camera.position.y = 1.6 + headBobOffset;
 
         if (moved) {
             footstepCooldown -= delta;
-
             if (footstepCooldown <= 0) {
                 sound.playFootstep();
                 footstepCooldown = 0.38;
@@ -736,16 +792,26 @@ function animate() {
         recordSafeTrail(delta);
         checkInteractions(delta);
         ui.setTimer(elapsedTime);
+
+        // Dynamic sentinel proximity hum
+        if (world) {
+            const minSentinelDist = world.getMinSentinelDist(camera.position.x, camera.position.z);
+            sound.updateSentinelHum(minSentinelDist);
+        }
+    } else {
+        sound.stopSentinelHum();
     }
 
-    // Torch follows the player and flickers like a real flame
+    // Torch follows the player and flickers
     const t = now / 1000;
     torch.position.set(camera.position.x, camera.position.y + 0.2, camera.position.z);
-    torch.intensity = TORCH_INTENSITY * (1 + 0.05 * Math.sin(t * 13) + 0.04 * Math.sin(t * 7.3 + 1.7) + 0.02 * Math.sin(t * 31));
+    torch.intensity = currentBaseTorchIntensity * (1 + 0.05 * Math.sin(t * 13) + 0.04 * Math.sin(t * 7.3 + 1.7) + 0.02 * Math.sin(t * 31));
 
-    world.update(t, delta, playing);
+    if (world) {
+        world.update(t, delta, playing, camera.position);
+    }
 
-    // Chart the cells around you (cheap: it does nothing until you enter a new cell)
+    // Chart cells around player
     const here = world.toCell(camera.position.x, camera.position.z);
     world.reveal(here.row, here.col);
 
